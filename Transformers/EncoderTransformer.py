@@ -1,5 +1,6 @@
 from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.preprocessing import LabelEncoder, OneHotEncoder, OrdinalEncoder
+import numpy as np
 
 
 class EncoderTransformer(BaseEstimator, TransformerMixin):
@@ -18,12 +19,13 @@ class EncoderTransformer(BaseEstimator, TransformerMixin):
 
     def fit(self, X, y=None):
         if self.data is None:
-            self.encoder.fit(X[self.column])
+            self.encoder.fit(X[self.column].astype(str))
         else:
-            self.encoder.fit(self.data)
+            self.encoder.fit(self.data.astype(str))
         return self
 
     def transform(self, X, y=None):
         self.X = X.copy()
-        self.X[self.out_column] = self.encoder.transform(X[self.column])
+        self.X[self.out_column] = self.encoder.transform(X[self.column].astype(str))
+        self.X[self.out_column] = self.X[self.out_column].replace('nan', np.nan)
         return self.X
