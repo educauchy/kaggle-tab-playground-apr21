@@ -22,6 +22,7 @@ class MetaClassifier(ClassifierMixin):
         print('-----------------------')
 
     def fit(self, X, y=None):
+        print('Fitting model begins...')
         self.X = X.copy()
         self.y = y.copy()
         self.y.reset_index(drop=True, inplace=True)
@@ -29,16 +30,22 @@ class MetaClassifier(ClassifierMixin):
             non_nan_anomaly = self.X[self.X.Is_Anomaly == 1].index
             self.X = self.X[self.X.Is_Anomaly == 1]
             self.y = self.y.reindex(non_nan_anomaly)
-        self.X.drop(['Is_Anomaly'], axis=1, inplace=True)
-        print(self.X)
-        print(self.y)
+            self.X.drop(['Is_Anomaly'], axis=1, inplace=True)
+        self.X.reset_index(drop=True, inplace=True)
+        self.y.reset_index(drop=True, inplace=True)
         self.model.fit(self.X, self.y)
-        print('Anomalies found and removed: ' + str(len(non_nan_anomaly)))
+        print('Fitting model ended...')
+        print('')
         return self
 
     def predict(self, X, y=None):
         self.X = X.copy()
-        self.X.drop(['Is_Anomaly'], axis=1, inplace=True)
+        if 'Is_Anomaly' in self.X.columns:
+            self.X.drop(['Is_Anomaly'], axis=1, inplace=True)
         predict = self.model.predict(self.X)
         return predict
 
+    def set_params(self, **parameters):
+        for parameter, value in parameters.items():
+            setattr(self, parameter, value)
+        return self

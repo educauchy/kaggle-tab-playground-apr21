@@ -1,22 +1,29 @@
 from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.ensemble import IsolationForest
-import numpy as np
+from sklearn.neighbors import LocalOutlierFactor
+from sklearn.svm import OneClassSVM
 
 
 class AnomalyDetectionTransformer(BaseEstimator, TransformerMixin):
-    def __init__(self, type='isoforest', columns=(), n=300):
+    def __init__(self, type='isoforest', columns=(), **params):
         super().__init__()
+        self.type = type
         self.detectors = {
-            'isoforest': IsolationForest(n_estimators=n, n_jobs=-1),
+            'isoforest': IsolationForest,
+            'lof': LocalOutlierFactor,
+            'onesvm': OneClassSVM,
         }
         self.columns = columns
-        self.detector = self.detectors[type]
+        self.detector = self.detectors[type](**params)
 
     def fit(self, X, y=None):
+        self.detector.fit(X)
         return self
 
     def transform(self, X, y=None):
+        print(self.detector)
         self.X = X.copy()
-        pred_anomaly = self.detector.fit_predict(X)
-        self.X['Is_Anomaly'] = pred_anomaly
+        self.X['Is_Anomaly'] = self.detector.predict(self.X)
+        print('Anomalies found: ' + str(self.X[self.X.Is_Anomaly == -1].shape[0]))
+        print('')
         return self.X

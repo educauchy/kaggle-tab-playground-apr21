@@ -18,14 +18,15 @@ class EncoderTransformer(BaseEstimator, TransformerMixin):
         self.encoder = self.encoders[type]
 
     def fit(self, X, y=None):
+        self.X = X.copy()
         if self.data is None:
-            self.encoder.fit(X[self.column].astype(str))
+            self.encoder.fit(self.X[self.column].astype(str))
         else:
             self.encoder.fit(self.data.astype(str))
         return self
 
     def transform(self, X, y=None):
         self.X = X.copy()
-        self.X[self.out_column] = self.encoder.transform(X[self.column].astype(str))
-        self.X[self.out_column] = self.X[self.out_column].replace('nan', np.nan)
+        self.X[self.out_column] = self.encoder.transform(self.X[self.column].astype(str))
+        self.X.loc[self.X[self.column].isnull(), self.out_column] = np.nan
         return self.X
