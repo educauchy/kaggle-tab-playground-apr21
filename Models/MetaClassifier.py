@@ -1,6 +1,6 @@
 from sklearn.base import ClassifierMixin
 from sklearn.ensemble import RandomForestClassifier, AdaBoostClassifier, GradientBoostingClassifier, \
-                                StackingClassifier
+                                StackingClassifier, BaggingClassifier
 from sklearn.linear_model import LogisticRegression
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.svm import LinearSVC
@@ -17,6 +17,7 @@ class MetaClassifier(ClassifierMixin):
             'GBM': GradientBoostingClassifier,
             'Tree': DecisionTreeClassifier,
             'Stacking': StackingClassifier,
+            'Bagging': BaggingClassifier,
         }
         self.model = self.models[model](**params)
         print('Model:')

@@ -8,8 +8,10 @@ from Transformers.ClusteringTransformer import ClusteringTransformer
 from Models.MetaClassifier import MetaClassifier
 from sklearn.pipeline import Pipeline, FeatureUnion
 from sklearn.model_selection import train_test_split, GridSearchCV
-from sklearn.ensemble import RandomForestClassifier
+from sklearn.ensemble import RandomForestClassifier, BaggingClassifier
+from sklearn.neighbors import KNeighborsClassifier
 import pandas as pd
+import random
 from lightgbm import LGBMClassifier
 from sklearn.linear_model import LogisticRegression
 from sklearn.tree import DecisionTreeClassifier
@@ -48,39 +50,45 @@ preprocess_pipeline = Pipeline(steps=[
 ])
 
 estimators = [
-    ('rf', RandomForestClassifier(n_estimators=300, random_state=0)),
-    ('logreg', LogisticRegression(max_iter=5000, random_state=0)),
-    ('svm', LinearSVC(max_iter=5000, random_state=0)),
+    ('bg_knn', BaggingClassifier(KNeighborsClassifier(), n_estimators=1000, bootstrap_features=True, oob_score=True, \
+                                n_jobs=-1, random_state=0)),
+    ('bg_logreg', BaggingClassifier(LogisticRegression(max_iter=10000), n_estimators=1000, bootstrap_features=True, \
+                                    oob_score=True, n_jobs=-1, random_state=0)),
+    ('rf_dt', RandomForestClassifier(n_estimators=1000, oob_score=True, n_jobs=-1, random_state=0)),
 ]
 full_pipeline = Pipeline(steps=[
     ('drop_columns', DropColumnsTransformer(columns=['Ticket', 'PassengerId'])),
-    ('feature_extraction', FeatureExtractionTransformer(age_bins=[0, 14, 25, 35, 60])),
+    ('feature_extraction', FeatureExtractionTransformer(age_bins=range(0, 100, 10))),
     ('preprocess_pipeline', preprocess_pipeline),
     ('feature_selection', FeatureSelectionTransformer(columns=out_columns)),
     # ('imputation', ImputeTransformer(type='simple', strategy='median')),
-    ('imputation', ImputeTransformer(type='KNN', n_neighbors=2)),
-    # ('imputation', ImputeTransformer(type='iterative', sample_posterior=True)),
-    # ('anomaly_detection', AnomalyDetectionTransformer(type='isoforest', columns=out_columns, n_estimators=300)),
+    # ('imputation', ImputeTransformer(type='KNN', n_neighbors=2)),
+    ('imputation', ImputeTransformer(type='iterative', max_iter=50, sample_posterior=True)),
+    ('anomaly_detection', AnomalyDetectionTransformer(type='isoforest', columns=out_columns, n_estimators=500)),
     # ('anomaly_detection', AnomalyDetectionTransformer(type='lof', columns=out_columns, n_neighbors=3, novelty=True)),
-    ('anomaly_detection', AnomalyDetectionTransformer(type='onesvm', columns=out_columns)),
+    # ('anomaly_detection', AnomalyDetectionTransformer(type='onesvm', columns=out_columns)),
     ('clustering', ClusteringTransformer(type='DBSCAN', eps=3, n_jobs=-1)),
     # ('model', MetaClassifier(model='RF', n_estimators=2000, criterion='entropy', \
     #                             random_state=0, oob_score=True, n_jobs=-1)),
     # ('model', MetaClassifier(model='GBM', n_estimators=500)),
     # ('model', MetaClassifier(model='AdaBoost', n_estimators=2500)),
-    ('model', LGBMClassifier(n_estimators=2000, n_jobs=-1)),
-    # ('model', MetaClassifier(model='Stacking', estimators=estimators, final_estimator=LogisticRegression(max_iter=5000), \
-    #                          cv=5, n_jobs=-1)),
+    # ('model', LGBMClassifier(n_estimators=3000, n_jobs=-1)),
+    ('model', MetaClassifier(model='Stacking', estimators=estimators, cv=4, n_jobs=-1, \
+                             final_estimator=LogisticRegression(max_iter=50000)))
 ])
 
 training = full_pipeline.fit(X_train, y_train)
-# out = pd.DataFrame(data={'PassengerId': test['PassengerId'].astype(int)})
-# out['Survived'] = training.predict(test).astype(int)
-# out.to_csv('./submissions/Pipeline_KNN_LOF_RF.csv', index=False)
+
+out = pd.DataFrame(data={'PassengerId': test['PassengerId'].astype(int)})
+out['Survived'] = training.predict(test).astype(int)
+out.to_csv('./submissions/Pipeline_Stacking_' + str(random.random()) + '.csv', index=False)
 
 score_test = round(training.score(X_test, y_test) * 100, 2)
 print('----------------------------')
 print('Score: ' + str(score_test))
+
+# print(pd.DataFrame(np.array(list(zip(cols, np.round(clf.feature_importances_, 3)))), columns=['Feature', 'Importance']).sort_values(by='Importance', ascending=False))
+
 
 
 # param_grid = {
