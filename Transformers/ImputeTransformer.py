@@ -1,6 +1,6 @@
 from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.experimental import enable_iterative_imputer
-from sklearn.impute import KNNImputer, IterativeImputer
+from sklearn.impute import KNNImputer, SimpleImputer, IterativeImputer
 import pandas as pd
 
 
@@ -11,6 +11,7 @@ class ImputeTransformer(BaseEstimator, TransformerMixin):
         self.imputers = {
             'KNN': KNNImputer,
             'iterative': IterativeImputer,
+            'simple': SimpleImputer,
         }
         self.imputer = self.imputers[type](**params)
 
@@ -26,3 +27,8 @@ class ImputeTransformer(BaseEstimator, TransformerMixin):
         columns = X.columns
         imputed_data = self.imputer.transform(X)
         return pd.DataFrame(imputed_data, columns=columns)
+
+    def set_params(self, **parameters):
+        for parameter, value in parameters.items():
+            setattr(self, parameter, value)
+        return self

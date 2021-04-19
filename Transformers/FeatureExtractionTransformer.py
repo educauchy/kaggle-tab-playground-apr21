@@ -4,8 +4,9 @@ import pandas as pd
 
 
 class FeatureExtractionTransformer(BaseEstimator, TransformerMixin):
-    def __init__(self):
+    def __init__(self, age_bins=()):
         super().__init__()
+        self.age_bins = age_bins
 
     def __age_binning(self, col, bins=()):
         labels = range(len(bins) - 1)
@@ -21,6 +22,6 @@ class FeatureExtractionTransformer(BaseEstimator, TransformerMixin):
         self.X['Is_Alone'] = np.where(self.X['Family_Members'] == 0, 1, 0)
         self.X['Surname'] = X['Name'].str.split(", ", expand=True)[0]
         self.X['Cabin_Letter'] = X['Cabin'].str.slice(0, 1)
-        self.X['Age_Bins'] = self.__age_binning(self.X['Age'], bins=[18, 40])
+        self.X['Age_Bins'] = self.__age_binning(self.X['Age'], bins=self.age_bins)
         self.X['Fare_Log'] = np.log1p(X['Fare'])
         return self.X

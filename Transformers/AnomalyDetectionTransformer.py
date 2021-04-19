@@ -27,3 +27,8 @@ class AnomalyDetectionTransformer(BaseEstimator, TransformerMixin):
         print('Anomalies found: ' + str(self.X[self.X.Is_Anomaly == -1].shape[0]))
         print('')
         return self.X
+
+    def set_params(self, **parameters):
+        for parameter, value in parameters.items():
+            setattr(self, parameter, value)
+        return self

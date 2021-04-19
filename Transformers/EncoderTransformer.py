@@ -30,3 +30,8 @@ class EncoderTransformer(BaseEstimator, TransformerMixin):
         self.X[self.out_column] = self.encoder.transform(self.X[self.column].astype(str))
         self.X.loc[self.X[self.column].isnull(), self.out_column] = np.nan
         return self.X
+
+    def set_params(self, **parameters):
+        for parameter, value in parameters.items():
+            setattr(self, parameter, value)
+        return self
