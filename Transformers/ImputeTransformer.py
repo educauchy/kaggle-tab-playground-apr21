@@ -17,8 +17,9 @@ class ImputeTransformer(BaseEstimator, TransformerMixin):
 
     def fit(self, X, y=None):
         print(self.imputer)
+        print(X.isnull().sum())
         print('Imputing begins...')
-        self.imputer.fit(X)
+        self.imputer.fit(X, y)
         print('Imputing ended...')
         print('')
         return self

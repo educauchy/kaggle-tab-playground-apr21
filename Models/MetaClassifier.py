@@ -48,6 +48,10 @@ class MetaClassifier(ClassifierMixin):
         predict = self.model.predict(self.X)
         return predict
 
+    def score(self, X, y=None):
+        score = self.model.score(self.X)
+        return score
+
     def set_params(self, **parameters):
         for parameter, value in parameters.items():
             setattr(self, parameter, value)

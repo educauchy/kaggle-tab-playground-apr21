@@ -5,6 +5,7 @@ from sklearn.cluster import DBSCAN
 class ClusteringTransformer(BaseEstimator, TransformerMixin):
     def __init__(self, type='DBSCAN', **params):
         super().__init__()
+        self.type = type
         self.methods = {
             'DBSCAN': DBSCAN,
         }
@@ -21,3 +22,8 @@ class ClusteringTransformer(BaseEstimator, TransformerMixin):
         print('Clustering ended...')
         print('')
         return self.X
+
+    def set_params(self, **parameters):
+        for parameter, value in parameters.items():
+            setattr(self, parameter, value)
+        return self

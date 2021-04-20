@@ -17,16 +17,15 @@ class AnomalyDetectionTransformer(BaseEstimator, TransformerMixin):
         self.detector = self.detectors[type](**params)
 
     def fit(self, X, y=None):
-        self.detector.fit(X)
+        print(self.detector)
+        self.X = X.copy()
+        self.X['Is_Anomaly'] = self.detector.fit_predict(self.X)
+        print('Anomalies found: ' + str(self.X[self.X.Is_Anomaly == -1].shape[0]))
+        print('')
         return self
 
     def transform(self, X, y=None):
-        print(self.detector)
-        self.X = X.copy()
-        self.X['Is_Anomaly'] = self.detector.predict(self.X)
-        print('Anomalies found: ' + str(self.X[self.X.Is_Anomaly == -1].shape[0]))
-        print('')
-        return self.X
+        return X
 
     def set_params(self, **parameters):
         for parameter, value in parameters.items():

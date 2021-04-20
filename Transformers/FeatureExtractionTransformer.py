@@ -1,6 +1,7 @@
 from sklearn.base import BaseEstimator, TransformerMixin
 import numpy as np
 import pandas as pd
+from scipy.stats import boxcox
 
 
 class FeatureExtractionTransformer(BaseEstimator, TransformerMixin):
@@ -20,8 +21,10 @@ class FeatureExtractionTransformer(BaseEstimator, TransformerMixin):
         self.X = X.copy()
         self.X['Family_Members'] = self.X['SibSp'] + self.X['Parch']
         self.X['Is_Alone'] = np.where(self.X['Family_Members'] == 0, 1, 0)
-        self.X['Surname'] = X['Name'].str.split(", ", expand=True)[0]
+        self.X[['Surname', 'Firstname']] = self.X['Name'].str.split(", ", expand=True)
         self.X['Cabin_Letter'] = X['Cabin'].str.slice(0, 1)
         self.X['Age_Bins'] = self.__age_binning(self.X['Age'], bins=self.age_bins)
+        # age_log = np.log1p(self.X['Age'])
+        # self.X['Age_Log'] = age_log[age_log > 2.7]
         self.X['Fare_Log'] = np.log1p(X['Fare'])
         return self.X
