@@ -49,7 +49,7 @@ class MetaClassifier(ClassifierMixin):
         return predict
 
     def score(self, X, y=None):
-        score = self.model.score(self.X)
+        score = self.model.score(X, y)
         return score
 
     def set_params(self, **parameters):

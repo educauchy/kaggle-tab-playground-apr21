@@ -11,7 +11,8 @@ from sklearn.model_selection import train_test_split, GridSearchCV
 from sklearn.ensemble import RandomForestClassifier, BaggingClassifier, AdaBoostClassifier
 from sklearn.neighbors import KNeighborsClassifier
 import pandas as pd
-import random
+from sklearn.model_selection import KFold, cross_val_score
+# import entropy_based_binning as ebb
 from lightgbm import LGBMClassifier
 from sklearn.linear_model import LogisticRegression
 from sklearn.tree import DecisionTreeClassifier
@@ -61,25 +62,30 @@ full_pipeline = Pipeline(steps=[
     ('preprocess_pipeline', preprocess_pipeline),
     ('feature_selection', FeatureSelectionTransformer(columns=out_columns)),
     # ('imputation', ImputeTransformer(type='simple', strategy='median')),
-    ('imputation', ImputeTransformer(type='KNN', n_neighbors=20)), # 2-76.33; 3-76.3; 4-76.33
+    ('imputation', ImputeTransformer(type='KNN', n_neighbors=5)), # 2-76.33; 3-76.3; 4-76.33
     # ('imputation', ImputeTransformer(type='iterative', max_iter=25, sample_posterior=True)),
-    # ('anomaly_detection', AnomalyDetectionTransformer(type='isoforest', columns=out_columns, n_estimators=100)),
-    ('anomaly_detection', AnomalyDetectionTransformer(type='lof', columns=out_columns, n_neighbors=20)),
+    ('anomaly_detection', AnomalyDetectionTransformer(type='isoforest', columns=out_columns, n_estimators=100)),
+    # ('anomaly_detection', AnomalyDetectionTransformer(type='lof', columns=out_columns, n_neighbors=20)),
     # ('anomaly_detection', AnomalyDetectionTransformer(type='onesvm', columns=out_columns)),
-    ('clustering', ClusteringTransformer(type='DBSCAN', eps=1, n_jobs=-1)),
-    # ('model', MetaClassifier(model='RF', n_estimators=5000, criterion='entropy', \
-    #                             random_state=0, oob_score=True, n_jobs=-1)),
-    ('model', MetaClassifier(model='GBM', n_estimators=100)),
+    ('clustering', ClusteringTransformer(type='DBSCAN', eps=1.1, n_jobs=-1)),
+    ('model', MetaClassifier(model='RF', n_estimators=1000, criterion='entropy', \
+                                random_state=0, oob_score=True, n_jobs=-1)),
+    # ('model', MetaClassifier(model='GBM', n_estimators=500)),
     # ('model', MetaClassifier(model='AdaBoost', n_estimators=2500)),
     # ('model', LGBMClassifier(n_estimators=2000, max_depth=1, n_jobs=-1)),
     # ('model', MetaClassifier(model='Stacking', estimators=estimators, cv=4, n_jobs=-1, \
     #                          final_estimator=LinearSVC(max_iter=50000)))
 ])
 
-training = full_pipeline.fit(X_train, y_train)
-score_test = round(training.score(X_test, y_test) * 100, 2)
-print('----------------------------')
-print('Score: ' + str(score_test))
+
+cv = KFold(n_splits=4, shuffle=True, random_state=0)
+scores = cross_val_score(full_pipeline, train_X, train_y, cv = cv)
+print(scores)
+
+# training = full_pipeline.fit(X_train, y_train)
+# score_test = round(training.score(X_test, y_test) * 100, 2)
+# print('----------------------------')
+# print('Score: ' + str(score_test))
 
 # out = pd.DataFrame(data={'PassengerId': test['PassengerId'].astype(int)})
 # out['Survived'] = training.predict(test).astype(int)
