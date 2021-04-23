@@ -56,39 +56,57 @@ estimators = [
     ('rf_dt', RandomForestClassifier(n_estimators=100, oob_score=True, n_jobs=-1, random_state=0)),
     ('ada_dt', AdaBoostClassifier(n_estimators=100, random_state=0)),
 ]
+imputers = [
+    {
+        'by': ['Gender', 'Pclass'],
+        'target': 'Origin',
+        'func': 'count',
+    },
+    {
+        'by': ['Gender', 'Origin', 'Pclass'],
+        'target': 'Age',
+        'func': 'median',
+    },
+    {
+        'by': ['Gender', 'Origin', 'Pclass'],
+        'target': 'Fare',
+        'func': 'median',
+    },
+]
 full_pipeline = Pipeline(steps=[
     ('drop_columns', DropColumnsTransformer(columns=['Ticket', 'PassengerId'])),
+    # ('drop_columns', DropColumnsTransformer()),
     ('feature_extraction', FeatureExtractionTransformer(age_bins=range(0, 100, 10))),
     ('preprocess_pipeline', preprocess_pipeline),
     ('feature_selection', FeatureSelectionTransformer(columns=out_columns)),
-    # ('imputation', ImputeTransformer(type='simple', strategy='median')),
-    ('imputation', ImputeTransformer(type='KNN', n_neighbors=5)), # 2-76.33; 3-76.3; 4-76.33
-    # ('imputation', ImputeTransformer(type='iterative', max_iter=25, sample_posterior=True)),
-    ('anomaly_detection', AnomalyDetectionTransformer(type='isoforest', columns=out_columns, n_estimators=100)),
+    # ('imputation', ImputeTransformer(type='simple', by_cols=imputers, strategy='median')),
+    ('imputation', ImputeTransformer(type='KNN', by_cols=imputers, n_neighbors=10)), # 2-76.33; 3-76.3; 4-76.33
+    # ('imputation', ImputeTransformer(type='iterative', by_cols=imputers, max_iter=100, sample_posterior=True)),
+    ('anomaly_detection', AnomalyDetectionTransformer(type='isoforest', columns=out_columns, n_estimators=300)),
     # ('anomaly_detection', AnomalyDetectionTransformer(type='lof', columns=out_columns, n_neighbors=20)),
     # ('anomaly_detection', AnomalyDetectionTransformer(type='onesvm', columns=out_columns)),
     ('clustering', ClusteringTransformer(type='DBSCAN', eps=1.1, n_jobs=-1)),
-    ('model', MetaClassifier(model='RF', n_estimators=1000, criterion='entropy', \
-                                random_state=0, oob_score=True, n_jobs=-1)),
-    # ('model', MetaClassifier(model='GBM', n_estimators=500)),
-    # ('model', MetaClassifier(model='AdaBoost', n_estimators=2500)),
+    # ('model', MetaClassifier(model='RF', n_estimators=35, criterion='entropy', \
+    #                             random_state=0, oob_score=True, n_jobs=-1)),
+    # ('model', MetaClassifier(model='GBM', n_estimators=100)),
+    ('model', MetaClassifier(model='AdaBoost', n_estimators=1500)),
     # ('model', LGBMClassifier(n_estimators=2000, max_depth=1, n_jobs=-1)),
     # ('model', MetaClassifier(model='Stacking', estimators=estimators, cv=4, n_jobs=-1, \
     #                          final_estimator=LinearSVC(max_iter=50000)))
 ])
 
 
-cv = KFold(n_splits=4, shuffle=True, random_state=0)
-scores = cross_val_score(full_pipeline, train_X, train_y, cv = cv)
-print(scores)
+# cv = KFold(n_splits=4, shuffle=True, random_state=0)
+# scores = cross_val_score(full_pipeline, train_X, train_y, cv = cv)
+# print(scores)
 
-# training = full_pipeline.fit(X_train, y_train)
-# score_test = round(training.score(X_test, y_test) * 100, 2)
-# print('----------------------------')
-# print('Score: ' + str(score_test))
+training = full_pipeline.fit(X_train, y_train)
+score_test = round(training.score(X_test, y_test) * 100, 2)
+print('----------------------------')
+print('Score: ' + str(score_test))
 
 # out = pd.DataFrame(data={'PassengerId': test['PassengerId'].astype(int)})
-# out['Survived'] = training.predict(test).astype(int)
+# out['Survived'] = full_pipeline.fit(X_train, y_train).predict(test).astype(int)
 # out.to_csv('./submissions/Pipeline_LGBM_Full_' + str(random.random()) + '.csv', index=False)
 
 

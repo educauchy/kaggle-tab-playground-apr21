@@ -1,10 +1,13 @@
 from sklearn.base import BaseEstimator, TransformerMixin
+import warnings
 
 
 class DropColumnsTransformer(BaseEstimator, TransformerMixin):
     def __init__(self, columns=[]):
         super().__init__()
         self.columns = columns
+        if (columns is None or len(columns) == 0):
+            warnings.warn('No columns specified')
 
     def fit(self, X, y=None):
         return self
