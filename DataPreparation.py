@@ -5,11 +5,13 @@ from Transformers.EncoderTransformer import EncoderTransformer
 from Transformers.AnomalyDetectionTransformer import AnomalyDetectionTransformer
 from Transformers.DropColumnsTransformer import DropColumnsTransformer
 from Transformers.ClusteringTransformer import ClusteringTransformer
+from Transformers.FeatureInteractionTransformer import FeatureInteractionTransformer
 from Models.MetaClassifier import MetaClassifier
 from sklearn.pipeline import Pipeline, FeatureUnion
 from sklearn.model_selection import train_test_split, GridSearchCV
 from sklearn.ensemble import RandomForestClassifier, BaggingClassifier, AdaBoostClassifier
 from sklearn.neighbors import KNeighborsClassifier
+from sklearn.preprocessing import PolynomialFeatures
 import pandas as pd
 import yaml
 import os, sys
@@ -30,9 +32,6 @@ try:
 
     with open (config_file, 'r') as file:
         config = yaml.safe_load(file)
-        output_folder = gen_submit(config)
-        output_path = os.path.join(project_dir, 'submissions', output_folder)
-        os.mkdir(output_path)
 except yaml.YAMLError as exc:
     print(exc)
     sys.exit(1)
@@ -75,6 +74,7 @@ full_pipeline = Pipeline(steps=[
     ('f_selection', FeatureSelectionTransformer(columns=config['model']['out_columns'])),
     ('impute', ImputeTransformer(type=config['model']['impute']['type'], \
                                      **config['model']['impute']['params'])),
+    ('f_interaction', FeatureInteractionTransformer(interaction_only=True, include_bias=False)),
     ('anomaly', AnomalyDetectionTransformer(type=config['model']['anomaly']['type'], \
                                             columns=config['model']['out_columns'], \
                                             **config['model']['anomaly']['params'])),
@@ -113,6 +113,11 @@ elif config['model']['strategy'] == 'model':
 if config['output']['save']:
     out = pd.DataFrame(data={'PassengerId': test['PassengerId'].astype(int)})
     out['Survived'] = training.predict(test).astype(int)
+
+    output_folder = gen_submit(config, score_test)
+    output_path = os.path.join(project_dir, 'submissions', output_folder)
+    os.mkdir(output_path)
+
     out.to_csv( os.path.join(output_path, 'output.csv'), index=False)
     copyfile( config_file, os.path.join(output_path, 'config.yaml') )
 

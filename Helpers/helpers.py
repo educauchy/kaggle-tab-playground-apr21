@@ -14,9 +14,9 @@ short_names = {
     'RF': 'RF',
 }
 
-def gen_submit(config):
-    print(config)
-    output = short_names[config['model']['impute']['type']] + '_' + \
+def gen_submit(config, score_test):
+    output = str(score_test) + '_' + \
+             short_names[config['model']['impute']['type']] + '_' + \
              short_names[config['model']['anomaly']['type']] + '_' + \
              short_names[config['model']['cluster']['type']] + '_' + \
              short_names[config['model']['model']['type']] + '_' + \

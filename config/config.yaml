@@ -1,5 +1,4 @@
 output:
-  name: 'Config_Pipeline_'
   save: True
 
 data:
@@ -18,14 +17,13 @@ model:
                  'Pcl_Emb_Enc', 'Pcl_Sex_Enc', 'Sex_Emb_Enc']
   drop_columns: ['Ticket', 'PassengerId']
   f_ext:
-    age_bins: [4, 15, 35, 50, 70]
+    age_bins: [4, 15, 35, 50]
   impute:
-    type: 'simple'
+    type: 'iterative'
+    max_iter: 300
+#    k_neighbors: 20
     params:
       by_cols:
-        - by: ['Gender', 'Pclass']
-          target: 'Origin'
-          func: 'count'
         - by: ['Gender', 'Origin', 'Pclass']
           target: 'Age'
           func: 'median'
@@ -35,12 +33,13 @@ model:
   anomaly:
     type: 'lof'
     params:
-      n_neighbors: 5
+      n_neighbors: 2
   cluster:
     type: 'DBSCAN'
     params:
-      eps: 1.1
+      eps: 2
   model:
-    type: 'GBM'
+    type: 'RF'
     params:
-      n_estimators: 50
+      n_estimators: 300
+#      criterion: 'entropy'
