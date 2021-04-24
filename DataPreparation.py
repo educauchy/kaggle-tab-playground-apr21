@@ -11,33 +11,50 @@ from sklearn.model_selection import train_test_split, GridSearchCV
 from sklearn.ensemble import RandomForestClassifier, BaggingClassifier, AdaBoostClassifier
 from sklearn.neighbors import KNeighborsClassifier
 import pandas as pd
+import yaml
+import os, sys
+from shutil import copyfile
+import random
 from sklearn.model_selection import KFold, cross_val_score
-# import entropy_based_binning as ebb
 from lightgbm import LGBMClassifier
 from sklearn.linear_model import LogisticRegression
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.svm import LinearSVC
 from sklearn.compose import ColumnTransformer, make_column_selector
+from Helpers.helpers import gen_submit
+
+
+try:
+    project_dir = os.path.dirname(__file__)
+    config_file = os.path.join(project_dir, 'config/config.yaml')
+
+    with open (config_file, 'r') as file:
+        config = yaml.safe_load(file)
+        output_folder = gen_submit(config)
+        output_path = os.path.join(project_dir, 'submissions', output_folder)
+        os.mkdir(output_path)
+except yaml.YAMLError as exc:
+    print(exc)
+    sys.exit(1)
+except Exception as e:
+    print('Error reading the config file')
+    sys.exit(1)
 
 
 
-train = pd.read_csv('./data/train.csv')
-test = pd.read_csv('./data/test.csv')
+train = pd.read_csv(config['data']['train'])
+test = pd.read_csv(config['data']['test'])
+X = train[train.columns[~train.columns.isin([config['data']['target']])]]
+y = train[config['data']['target']]
+X_train, X_test, y_train, y_test = train_test_split(X, y, train_size=config['data']['train_size'], \
+                                                    random_state=config['model']['random_state'])
 
-train_X = train[train.columns[~train.columns.isin(['Survived'])]]
-train_y = train['Survived']
-
-X = train[train.columns[~train.columns.isin(['Survived'])]]
-y = train['Survived']
-X_train, X_test, y_train, y_test = train_test_split(X, y, train_size=0.9, random_state=0)
-
-out_columns = ['Pclass', 'Age', 'SibSp', 'Parch', 'Family_Members', 'Fare', \
-        'Gender', 'Surname_Enc', 'Origin', 'Is_Alone', 'Fare_Log', 'Age_Bins']
-
-test['Survived'] = 0
+# Join train and test data for encoding
+test[config['data']['target']] = 0
 full = pd.concat([train, test])
 all_surnames = full['Name'].str.split(", ", expand=True)[0]
 all_names = full['Name'].str.split(", ", expand=True)[1]
+
 
 
 preprocess_pipeline = Pipeline(steps=[
@@ -46,83 +63,61 @@ preprocess_pipeline = Pipeline(steps=[
     ('cabin_letter_encoder', EncoderTransformer(type='label', column='Cabin_Letter', out_column='Cabin_Letter_Enc')),
     ('surname_encoder', EncoderTransformer(type='label', column='Surname', out_column='Surname_Enc', data=all_surnames)),
     ('firstname_encoder', EncoderTransformer(type='label', column='Firstname', out_column='Firstname_Enc', data=all_names)),
+    ('pcl_emb_encoder', EncoderTransformer(type='label', column='Pclass_Embarked', out_column='Pcl_Emb_Enc')),
+    ('pcl_sex_encoder', EncoderTransformer(type='label', column='Pclass_Sex', out_column='Pcl_Sex_Enc')),
+    ('sex_emb_encoder', EncoderTransformer(type='label', column='Sex_Embarked', out_column='Sex_Emb_Enc')),
 ])
 
-estimators = [
-    ('bg_knn', BaggingClassifier(KNeighborsClassifier(), n_estimators=100, bootstrap_features=True, oob_score=True, \
-                                n_jobs=-1, random_state=0)),
-    ('bg_logreg', BaggingClassifier(LogisticRegression(max_iter=10000), n_estimators=100, bootstrap_features=True, \
-                                    oob_score=True, n_jobs=-1, random_state=0)),
-    ('rf_dt', RandomForestClassifier(n_estimators=100, oob_score=True, n_jobs=-1, random_state=0)),
-    ('ada_dt', AdaBoostClassifier(n_estimators=100, random_state=0)),
-]
-imputers = [
-    {
-        'by': ['Gender', 'Pclass'],
-        'target': 'Origin',
-        'func': 'count',
-    },
-    {
-        'by': ['Gender', 'Origin', 'Pclass'],
-        'target': 'Age',
-        'func': 'median',
-    },
-    {
-        'by': ['Gender', 'Origin', 'Pclass'],
-        'target': 'Fare',
-        'func': 'median',
-    },
-]
 full_pipeline = Pipeline(steps=[
-    ('drop_columns', DropColumnsTransformer(columns=['Ticket', 'PassengerId'])),
-    # ('drop_columns', DropColumnsTransformer()),
-    ('feature_extraction', FeatureExtractionTransformer(age_bins=range(0, 100, 10))),
-    ('preprocess_pipeline', preprocess_pipeline),
-    ('feature_selection', FeatureSelectionTransformer(columns=out_columns)),
-    # ('imputation', ImputeTransformer(type='simple', by_cols=imputers, strategy='median')),
-    ('imputation', ImputeTransformer(type='KNN', by_cols=imputers, n_neighbors=10)), # 2-76.33; 3-76.3; 4-76.33
-    # ('imputation', ImputeTransformer(type='iterative', by_cols=imputers, max_iter=100, sample_posterior=True)),
-    ('anomaly_detection', AnomalyDetectionTransformer(type='isoforest', columns=out_columns, n_estimators=300)),
-    # ('anomaly_detection', AnomalyDetectionTransformer(type='lof', columns=out_columns, n_neighbors=20)),
-    # ('anomaly_detection', AnomalyDetectionTransformer(type='onesvm', columns=out_columns)),
-    ('clustering', ClusteringTransformer(type='DBSCAN', eps=1.1, n_jobs=-1)),
-    # ('model', MetaClassifier(model='RF', n_estimators=35, criterion='entropy', \
-    #                             random_state=0, oob_score=True, n_jobs=-1)),
-    # ('model', MetaClassifier(model='GBM', n_estimators=100)),
-    ('model', MetaClassifier(model='AdaBoost', n_estimators=1500)),
-    # ('model', LGBMClassifier(n_estimators=2000, max_depth=1, n_jobs=-1)),
-    # ('model', MetaClassifier(model='Stacking', estimators=estimators, cv=4, n_jobs=-1, \
-    #                          final_estimator=LinearSVC(max_iter=50000)))
+    ('drop_columns', DropColumnsTransformer(columns=config['model']['drop_columns'])),
+    ('f_extraction', FeatureExtractionTransformer(age_bins=config['model']['f_ext']['age_bins'])),
+    ('preprocess', preprocess_pipeline),
+    ('f_selection', FeatureSelectionTransformer(columns=config['model']['out_columns'])),
+    ('impute', ImputeTransformer(type=config['model']['impute']['type'], \
+                                     **config['model']['impute']['params'])),
+    ('anomaly', AnomalyDetectionTransformer(type=config['model']['anomaly']['type'], \
+                                            columns=config['model']['out_columns'], \
+                                            **config['model']['anomaly']['params'])),
+    ('cluster', ClusteringTransformer(type=config['model']['cluster']['type'], \
+                                    **config['model']['cluster']['params'])),
+    ('model', MetaClassifier(model=config['model']['model']['type'], \
+                             random_state=config['model']['random_state'], \
+                             **config['model']['model']['params'])),
 ])
 
 
-# cv = KFold(n_splits=4, shuffle=True, random_state=0)
-# scores = cross_val_score(full_pipeline, train_X, train_y, cv = cv)
-# print(scores)
 
-training = full_pipeline.fit(X_train, y_train)
-score_test = round(training.score(X_test, y_test) * 100, 2)
-print('----------------------------')
-print('Score: ' + str(score_test))
+if config['model']['strategy'] == 'cv':
+    cv = KFold(n_splits=config['model']['KFold_folds'], shuffle=True, random_state=config['model']['random_state'])
+    scores = cross_val_score(full_pipeline, X, y, cv = cv)
+    print('KFold scores:')
+    print(scores)
+elif config['model']['strategy'] == 'grid_search':
+    param_grid = {
+        'imputation__n_neighbors': range(1, 10),
+        'anomaly_detection__n_estimators': range(100, 1000, 100),
+        'model__n_estimators': range(100, 2000, 100),
+        'clustering__eps': range(1, 10),
+    }
+    training = GridSearchCV(full_pipeline, param_grid, scoring='accuracy', cv=5, verbose=1, n_jobs=-1)
+    training.fit(X_train, y_train)
+    print(training)
+    print(training.best_params_)
+    print('Score: ' + str(training.score(X_test, y_test)))
+elif config['model']['strategy'] == 'model':
+    training = full_pipeline.fit(X_train, y_train)
+    score_test = round(training.score(X_test, y_test) * 100, 2)
+    print('Score: ' + str(score_test))
 
-# out = pd.DataFrame(data={'PassengerId': test['PassengerId'].astype(int)})
-# out['Survived'] = full_pipeline.fit(X_train, y_train).predict(test).astype(int)
-# out.to_csv('./submissions/Pipeline_LGBM_Full_' + str(random.random()) + '.csv', index=False)
+
+if config['output']['save']:
+    out = pd.DataFrame(data={'PassengerId': test['PassengerId'].astype(int)})
+    out['Survived'] = training.predict(test).astype(int)
+    out.to_csv( os.path.join(output_path, 'output.csv'), index=False)
+    copyfile( config_file, os.path.join(output_path, 'config.yaml') )
 
 
-# print(pd.DataFrame(np.array(list(zip(cols, np.round(clf.feature_importances_, 3)))), columns=['Feature', 'Importance']).sort_values(by='Importance', ascending=False))
 
 
 
-param_grid = {
-    # 'imputation__n_neighbors': range(1, 10),
-    # 'anomaly_detection__n_estimators': range(100, 1000, 100),
-    # 'model__n_estimators': range(100, 2000, 100),
-    'clustering__eps': range(1, 10),
-}
-# grid = GridSearchCV(full_pipeline, param_grid, scoring='accuracy', cv=5, verbose=1, n_jobs=-1)
-# grid.fit(X_train, y_train)
-# print(grid)
-# print(grid.best_params_)
-# print(grid.score(X_test, y_test))
 

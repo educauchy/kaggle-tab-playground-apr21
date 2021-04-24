@@ -1,0 +1,46 @@
+output:
+  name: 'Config_Pipeline_'
+  save: True
+
+data:
+  train: './data/train.csv'
+  test: './data/test.csv'
+  target: 'Survived'
+  train_size: 0.8
+
+model:
+  random_state: 0
+  n_jobs: -1
+  strategy: 'model'
+  KFold_folds: 4
+  out_columns: [ 'Pclass', 'Age', 'SibSp', 'Parch', 'Family_Members', 'Fare',
+                 'Gender', 'Surname_Enc', 'Origin', 'Is_Alone', 'Fare_Log', 'Age_Bins',
+                 'Pcl_Emb_Enc', 'Pcl_Sex_Enc', 'Sex_Emb_Enc']
+  drop_columns: ['Ticket', 'PassengerId']
+  f_ext:
+    age_bins: [4, 15, 35, 50, 70]
+  impute:
+    type: 'simple'
+    params:
+      by_cols:
+        - by: ['Gender', 'Pclass']
+          target: 'Origin'
+          func: 'count'
+        - by: ['Gender', 'Origin', 'Pclass']
+          target: 'Age'
+          func: 'median'
+        - by: ['Gender', 'Origin', 'Pclass']
+          target: 'Fare'
+          func: 'median'
+  anomaly:
+    type: 'lof'
+    params:
+      n_neighbors: 5
+  cluster:
+    type: 'DBSCAN'
+    params:
+      eps: 1.1
+  model:
+    type: 'GBM'
+    params:
+      n_estimators: 50

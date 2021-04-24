@@ -5,7 +5,7 @@ from scipy.stats import boxcox
 
 
 class FeatureExtractionTransformer(BaseEstimator, TransformerMixin):
-    def __init__(self, age_bins=()):
+    def __init__(self, age_bins=range(0, 100, 10)):
         super().__init__()
         self.age_bins = age_bins
 
@@ -24,7 +24,8 @@ class FeatureExtractionTransformer(BaseEstimator, TransformerMixin):
         self.X[['Surname', 'Firstname']] = self.X['Name'].str.split(", ", expand=True)
         self.X['Cabin_Letter'] = X['Cabin'].str.slice(0, 1)
         self.X['Age_Bins'] = self.__age_binning(self.X['Age'], bins=self.age_bins)
-        # age_log = np.log1p(self.X['Age'])
-        # self.X['Age_Log'] = age_log[age_log > 2.7]
         self.X['Fare_Log'] = np.log1p(X['Fare'])
+        self.X['Pclass_Embarked'] = self.X['Pclass'].astype(str) + self.X['Embarked']
+        self.X['Pclass_Sex'] = self.X['Pclass'].astype(str) + self.X['Sex']
+        self.X['Sex_Embarked'] = self.X['Sex'].astype(str) + self.X['Embarked']
         return self.X
