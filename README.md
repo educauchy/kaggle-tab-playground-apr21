@@ -13,18 +13,21 @@ Libraries used:
 * sklearn
 * seaborn
 * matplotlib
+* numpy
 
 Tried techniques:
 * Preprocessing
-  * Scaling
-  * Binning
-  * Transformation
-  * Imputation
-  * Anomaly Detection
-  * Encoding
   * Feature Extraction
+  * Feature Selection
+  * Feature Interaction
+  * Encoding (Label, Ordinal, OneHot)
+  * Imputation (KNNImputer, IterativeImputer)
+  * Anomaly Detection (IsolationForest, )
+  * Clustering (DBSCAN)
   
 * Models
   * Random Forest
   * Adaptive Boosting
-  * Stacking with LogReg, Decision Tree, SVM base learners
+  * Light GBM
+  * Gradient Boosting
+  * Stacking
