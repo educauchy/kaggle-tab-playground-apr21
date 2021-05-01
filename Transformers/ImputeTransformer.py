@@ -6,7 +6,9 @@ import numpy as np
 
 
 class ImputeTransformer(BaseEstimator, TransformerMixin):
-    def __init__(self, type='KNN', by_cols=(), **params):
+    def __init__(self, type: str = 'KNN',
+                        by_cols: dict = None,
+                        **params):
         super().__init__()
         self.type = type
         self.by_cols = by_cols

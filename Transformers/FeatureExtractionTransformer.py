@@ -5,7 +5,7 @@ from scipy.stats import boxcox
 
 
 class FeatureExtractionTransformer(BaseEstimator, TransformerMixin):
-    def __init__(self, age_bins=range(0, 100, 10)):
+    def __init__(self, age_bins: list = range(0, 100, 10)):
         super().__init__()
         self.age_bins = age_bins
 

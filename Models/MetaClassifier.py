@@ -4,10 +4,12 @@ from sklearn.ensemble import RandomForestClassifier, AdaBoostClassifier, Gradien
 from sklearn.linear_model import LogisticRegression
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.svm import LinearSVC
+from lightgbm import LGBMClassifier
+
 
 
 class MetaClassifier(ClassifierMixin):
-    def __init__(self, model='RF', **params):
+    def __init__(self, model: str = 'RF', **params):
         super().__init__()
         self.models = {
             'RF': RandomForestClassifier,
@@ -18,6 +20,7 @@ class MetaClassifier(ClassifierMixin):
             'Tree': DecisionTreeClassifier,
             'Stacking': StackingClassifier,
             'Bagging': BaggingClassifier,
+            'LGBM': LGBMClassifier,
         }
         self.model = self.models[model](**params)
         print('Model:')

@@ -3,7 +3,7 @@ from sklearn.cluster import DBSCAN
 
 
 class ClusteringTransformer(BaseEstimator, TransformerMixin):
-    def __init__(self, type='DBSCAN', **params):
+    def __init__(self, type: str = 'DBSCAN', **params):
         super().__init__()
         self.type = type
         self.methods = {

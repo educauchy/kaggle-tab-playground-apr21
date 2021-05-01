@@ -2,7 +2,7 @@ from sklearn.base import BaseEstimator, TransformerMixin
 
 
 class FeatureSelectionTransformer(BaseEstimator, TransformerMixin):
-    def __init__(self, columns=[]):
+    def __init__(self, columns: list = None):
         super().__init__()
         self.columns = columns
 

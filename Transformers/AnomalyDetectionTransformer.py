@@ -5,7 +5,9 @@ from sklearn.svm import OneClassSVM
 
 
 class AnomalyDetectionTransformer(BaseEstimator, TransformerMixin):
-    def __init__(self, type='isoforest', columns=(), **params):
+    def __init__(self, type: str = 'isoforest',
+                        columns: list = None,
+                        **params):
         super().__init__()
         self.type = type
         self.detectors = {

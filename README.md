@@ -5,8 +5,6 @@
 For the simplicity of data exploration and modelling design, Jupyter Notebook is used.
 Participation has the purpose of learning advanced Python and data manipulation techniques using statistics libraries.
 
-**Hardware**: Macbook Pro 13", Intel Core i5, RAM 16GB.
-
 ***
 
 Libraries used:
@@ -14,6 +12,8 @@ Libraries used:
 * seaborn
 * matplotlib
 * numpy
+* lighgbm
+* XGBoost
 
 Tried techniques:
 * Preprocessing
@@ -21,8 +21,8 @@ Tried techniques:
   * Feature Selection
   * Feature Interaction
   * Encoding (Label, Ordinal, OneHot)
-  * Imputation (KNNImputer, IterativeImputer)
-  * Anomaly Detection (IsolationForest, )
+  * Imputation (KNNImputer, IterativeImputer, Manual Imputation)
+  * Anomaly Detection (IsolationForest, OneClass SVM, Local Outlier Factor)
   * Clustering (DBSCAN)
   
 * Models

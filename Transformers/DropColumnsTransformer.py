@@ -3,7 +3,7 @@ import warnings
 
 
 class DropColumnsTransformer(BaseEstimator, TransformerMixin):
-    def __init__(self, columns=[]):
+    def __init__(self, columns: list = None):
         super().__init__()
         self.columns = columns
         if (columns is None or len(columns) == 0):

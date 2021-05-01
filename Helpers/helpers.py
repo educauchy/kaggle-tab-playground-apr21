@@ -12,6 +12,7 @@ short_names = {
     'AdaBoost': 'ada',
     'GBM': 'GBM',
     'RF': 'RF',
+    'LGBM': 'LGBM',
 }
 
 def gen_submit(config, score_test):

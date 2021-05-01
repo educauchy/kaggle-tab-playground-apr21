@@ -5,23 +5,49 @@ data:
   train: './data/train.csv'
   test: './data/test.csv'
   target: 'Survived'
-  train_size: 0.8
+  train_size: 0.9
 
 model:
   random_state: 0
   n_jobs: -1
   strategy: 'model'
   KFold_folds: 4
-  out_columns: [ 'Pclass', 'Age', 'SibSp', 'Parch', 'Family_Members', 'Fare',
-                 'Gender', 'Surname_Enc', 'Origin', 'Is_Alone', 'Fare_Log', 'Age_Bins',
-                 'Pcl_Emb_Enc', 'Pcl_Sex_Enc', 'Sex_Emb_Enc']
+  out_columns: [ 'Pclass', 'Age', 'SibSp', 'Parch', 'Family_Members', 'Fare', 'Cabin_Letter_Enc',
+                 'Gender', 'Surname_Enc', 'Origin', 'Is_Alone', 'Fare_Log']
   drop_columns: ['Ticket', 'PassengerId']
   f_ext:
-    age_bins: [4, 15, 35, 50]
+    age_bins: [4, 18, 40, 65, 100]
+  encoding:
+    - column: 'Sex'
+      out_column: 'Gender'
+      type: 'label'
+      data: False
+    - column: 'Embarked'
+      out_column: 'Origin'
+      type: 'label'
+      data: False
+    - column: 'Cabin_Letter'
+      out_column: 'Cabin_Letter_Enc'
+      type: 'label'
+      data: False
+    - column: 'Surname'
+      out_column: 'Surname_Enc'
+      type: 'label'
+      data: True
+    - column: 'Firstname'
+      out_column: 'Firstname_Enc'
+      type: 'label'
+      data: True
+  f_inter:
+    params:
+      degree: 2
+      interaction_only: True
+      include_bias: False
+      exclude_cols: ['Age', 'Fare', 'Fare_Log']
   impute:
-    type: 'iterative'
-    max_iter: 300
-#    k_neighbors: 20
+    type: 'KNN'
+    k_neighbors: 4
+    weights: 'distance'
     params:
       by_cols:
         - by: ['Gender', 'Origin', 'Pclass']
@@ -33,13 +59,19 @@ model:
   anomaly:
     type: 'lof'
     params:
-      n_neighbors: 2
+      n_neighbors: 4
   cluster:
     type: 'DBSCAN'
     params:
-      eps: 2
+      eps: 1.2
   model:
-    type: 'RF'
+    type: 'LGBM'
     params:
-      n_estimators: 300
-#      criterion: 'entropy'
+      n_estimators: 3000
+      max_depth: 1
+  param_grid:
+    impute__n_neighbors: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+    anomaly__n_neighbors: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+    cluster__eps: [0.2, 0.4, 0.6, 0.8, 1, 1.2, 1.4, 1.6, 1.8, 2, 2.2, 2.4, 2.6, 2.8, 3]
+    model__n_estimators: [500, 750, 1000, 1250, 1500, 1750, 2000, 2250, 2500, 2750, 3000, 3250, 3500, 3750, 4000]
+    model__max_depth: [1, 2, 3, 4, 5]
