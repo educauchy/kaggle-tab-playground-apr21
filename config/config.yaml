@@ -20,23 +20,23 @@ model:
   encoding:
     - column: 'Sex'
       out_column: 'Gender'
-      type: 'label'
+      method: 'label'
       data: False
     - column: 'Embarked'
       out_column: 'Origin'
-      type: 'label'
+      method: 'label'
       data: False
     - column: 'Cabin_Letter'
       out_column: 'Cabin_Letter_Enc'
-      type: 'label'
+      method: 'label'
       data: False
     - column: 'Surname'
       out_column: 'Surname_Enc'
-      type: 'label'
+      method: 'label'
       data: True
     - column: 'Firstname'
       out_column: 'Firstname_Enc'
-      type: 'label'
+      method: 'label'
       data: True
   f_inter:
     params:
@@ -45,7 +45,7 @@ model:
       include_bias: False
       exclude_cols: ['Age', 'Fare', 'Fare_Log']
   impute:
-    type: 'KNN'
+    method: 'KNN'
     k_neighbors: 4
     weights: 'distance'
     params:
@@ -57,15 +57,15 @@ model:
           target: 'Fare'
           func: 'median'
   anomaly:
-    type: 'lof'
+    method: 'lof'
     params:
       n_neighbors: 4
   cluster:
-    type: 'DBSCAN'
+    method: 'DBSCAN'
     params:
       eps: 1.2
   model:
-    type: 'LGBM'
+    method: 'LGBM'
     params:
       n_estimators: 3000
       max_depth: 1
