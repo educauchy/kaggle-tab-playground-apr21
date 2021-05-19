@@ -1,23 +1,15 @@
-from Transformers.FeatureSelectionTransformer import FeatureSelectionTransformer
-from Transformers.FeatureExtractionTransformer import FeatureExtractionTransformer
-from Transformers.ImputeTransformer import ImputeTransformer
-from Transformers.EncoderTransformer import EncoderTransformer
-from Transformers.AnomalyDetectionTransformer import AnomalyDetectionTransformer
-from Transformers.DropColumnsTransformer import DropColumnsTransformer
-from Transformers.ClusteringTransformer import ClusteringTransformer
-from Transformers.FeatureInteractionTransformer import FeatureInteractionTransformer
-from Models.MetaClassifier import MetaClassifier
+from Transformers import *
+from Models import *
+from Helpers import *
 from sklearn.pipeline import Pipeline
-from sklearn.model_selection import train_test_split, GridSearchCV
+from sklearn.model_selection import train_test_split, GridSearchCV, KFold, cross_val_score
 from sklearn.ensemble import RandomForestClassifier, BaggingClassifier, StackingClassifier
+from shutil import copyfile
+from sklearn.linear_model import LogisticRegression
+from sklearn.svm import LinearSVC
 import pandas as pd
 import yaml
 import os, sys
-from shutil import copyfile
-from sklearn.model_selection import KFold, cross_val_score
-from sklearn.linear_model import LogisticRegression
-from sklearn.svm import LinearSVC
-from Helpers.helpers import gen_submit
 
 
 try:
@@ -50,7 +42,6 @@ all = {
     'Firstname': full['Name'].str.split(", ", expand=True)[1],
 }
 
-
 preprocess_steps = []
 for item in config['model']['encoding']:
     data = all[item['column']] if item['data'] else None
@@ -63,7 +54,6 @@ stacking_estimators = [
     ('bg_lr', BaggingClassifier(base_estimator=LogisticRegression(max_iter=10000), n_estimators=2000, bootstrap_features=True, random_state=config['model']['random_state'])),
     ('bg_svm', BaggingClassifier(base_estimator=LinearSVC(max_iter=10000), n_estimators=2000, bootstrap_features=True, random_state=config['model']['random_state'])),
 ]
-
 
 full_pipeline = Pipeline(steps=[
     ('drop_columns', DropColumnsTransformer(columns=config['model']['drop_columns'])),
@@ -78,13 +68,12 @@ full_pipeline = Pipeline(steps=[
                                             **config['model']['anomaly']['params'])),
     ('cluster', ClusteringTransformer(type=config['model']['cluster']['type'], \
                                     **config['model']['cluster']['params'])),
-    # ('model', MetaClassifier(model=config['model']['model']['type'], \
-    #                          random_state=config['model']['random_state'], \
-    #                          **config['model']['model']['params'])),
+    ('model', MetaClassifier(model=config['model']['model']['type'], \
+                             random_state=config['model']['random_state'], \
+                             **config['model']['model']['params'])),
     # OR
-    ('model', StackingClassifier(estimators=stacking_estimators, cv=10, final_estimator=LogisticRegression(max_iter=10000), n_jobs=-1)),
+    # ('model', StackingClassifier(estimators=stacking_estimators, cv=10, final_estimator=LogisticRegression(max_iter=10000), n_jobs=-1)),
 ])
-
 
 
 if config['model']['strategy'] == 'cv':
@@ -114,9 +103,3 @@ if config['output']['save']:
 
     out.to_csv( os.path.join(output_path, 'output.csv'), index=False)
     copyfile( config_file, os.path.join(output_path, 'config.yaml') )
-
-
-
-
-
-
